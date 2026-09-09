@@ -1,0 +1,533 @@
+[
+  {
+    "id": "qa-001",
+    "question": "What are the two automatic interactive documentation UIs FastAPI provides out of the box, and where are they served?",
+    "reference_answer": "FastAPI automatically provides two interactive docs: Swagger UI at /docs and ReDoc at /redoc. Both are generated from the OpenAPI schema, which FastAPI also serves as raw JSON at /openapi.json.",
+    "expected_titles": [
+      "First Steps",
+      "Path Parameters"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-002",
+    "question": "If I declare a path parameter's type as int, what happens when a client requests a URL with a non-integer value like 'foo'?",
+    "reference_answer": "FastAPI validates the path parameter against the declared type and returns a clear HTTP error response stating that the input should be a valid integer, pointing to exactly where validation failed, instead of passing the invalid string into the function.",
+    "expected_titles": [
+      "Path Parameters"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-003",
+    "question": "If I define a path operation function with parameters that aren't part of the path, how does FastAPI treat them by default?",
+    "reference_answer": "Function parameters not declared as part of the path are automatically interpreted as query parameters, read from the query string after the '?' in the URL. They are converted and validated against the declared Python type, and become optional only when given a default value such as None.",
+    "expected_titles": [
+      "Query Parameters",
+      "Body - Multiple Parameters"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-004",
+    "question": "How do I tell FastAPI that a JSON request body should be parsed into a particular data structure?",
+    "reference_answer": "Declare a class that inherits from Pydantic's BaseModel with the desired attributes, then use it as a type-annotated parameter in the path operation function. FastAPI reads the body as JSON, converts and validates the data against the model, and generates the corresponding JSON Schema for the docs.",
+    "expected_titles": [
+      "Request Body"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-005",
+    "question": "How can I enforce a maximum length on an optional string query parameter?",
+    "reference_answer": "Wrap the parameter's type in Annotated and add Query(max_length=...), for example q: Annotated[str | None, Query(max_length=50)] = None. FastAPI validates the length, returns a clear error if it's exceeded, and documents the constraint in the OpenAPI schema.",
+    "expected_titles": [
+      "Query Parameters and String Validations"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-006",
+    "question": "How do I require that a numeric path parameter be strictly greater than zero?",
+    "reference_answer": "Use Path() with the gt parameter, for example item_id: Annotated[int, Path(gt=0)]. FastAPI also supports ge, lt, and le for greater-than-or-equal, less-than, and less-than-or-equal constraints, and these work for floats too.",
+    "expected_titles": [
+      "Path Parameters and Numeric Validations"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-007",
+    "question": "What happens if I declare two Pydantic model parameters, say item and user, in the same path operation function?",
+    "reference_answer": "FastAPI notices there is more than one body parameter and uses each parameter's name as a key in the expected JSON body, so it expects a body shaped like {\"item\": {...}, \"user\": {...}} rather than the model's fields sitting directly at the top level.",
+    "expected_titles": [
+      "Body - Multiple Parameters"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-008",
+    "question": "How do I add extra validation and metadata to individual attributes inside a Pydantic model used as a request body?",
+    "reference_answer": "Import Field from pydantic (not from fastapi) and use it as the value of a model attribute, e.g. name: str = Field(...). Field works the same way as Query, Path, and Body, and any extra keys passed to it are also included in the generated JSON Schema for the model.",
+    "expected_titles": [
+      "Body - Fields"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-009",
+    "question": "Can a Pydantic model's field itself contain a list of another Pydantic model?",
+    "reference_answer": "Yes. An attribute can be declared as list[SubModel] (or set[SubModel]), and FastAPI/Pydantic will validate, convert, and document each item as that submodel. Models can be nested arbitrarily deeply this way.",
+    "expected_titles": [
+      "Body - Nested Models"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-010",
+    "question": "What's the recommended way to support partial updates so a client only has to send the fields they actually want to change?",
+    "reference_answer": "Use PATCH, load the stored item into a Pydantic model, then call item.model_dump(exclude_unset=True) to get a dict containing only the fields the client actually sent. Apply that dict as the update= argument to model_copy() on the stored model and save the resulting copy.",
+    "expected_titles": [
+      "Body - Updates"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-011",
+    "question": "How do I read a cookie value inside a path operation function?",
+    "reference_answer": "Import Cookie from fastapi and declare a parameter the same way you would with Query or Path, for example ads_id: Annotated[str | None, Cookie()] = None. Using Cookie is required, otherwise the parameter would be interpreted as a query parameter.",
+    "expected_titles": [
+      "Cookie Parameters"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-012",
+    "question": "If I want to reject any cookies my API doesn't explicitly expect, how can I do that with a Pydantic cookie model?",
+    "reference_answer": "Declare the related cookies as fields on a Pydantic model passed via Cookie, and configure that model to forbid extra fields. If a client then sends an extra cookie, they get an error response with type 'extra_forbidden' naming the disallowed cookie.",
+    "expected_titles": [
+      "Cookie Parameter Models"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-013",
+    "question": "Why does a header parameter named user_agent in my Python function map to the HTTP header User-Agent?",
+    "reference_answer": "By default, Header automatically converts underscore characters in the parameter name to hyphens when extracting and documenting the header, since standard HTTP headers use hyphens and are case-insensitive. This automatic conversion can be disabled by setting convert_underscores=False.",
+    "expected_titles": [
+      "Header Parameters"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-014",
+    "question": "What happens if a client sends a query parameter that isn't declared in my Pydantic query-parameter model, when extra fields are forbidden?",
+    "reference_answer": "The client receives an error response with type 'extra_forbidden' and a loc pointing to [\"query\", <parameter name>], telling them that query parameter isn't allowed, once the model's configuration forbids extra fields.",
+    "expected_titles": [
+      "Query Parameter Models"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-015",
+    "question": "What class do I use to declare that a parameter should come from HTML form data rather than JSON?",
+    "reference_answer": "Use Form from fastapi. Form inherits directly from Body, and it's required for form fields such as the OAuth2 password flow's username and password, since without it the parameters would be interpreted as query or JSON body parameters.",
+    "expected_titles": [
+      "Form Data"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-016",
+    "question": "Can a single path operation accept both uploaded files and form fields together, and can it also accept a JSON body at the same time?",
+    "reference_answer": "Yes, File and Form parameters can be declared together in one path operation. However, you cannot also declare Body fields expected as JSON in that same operation, because the request will be encoded as multipart/form-data instead of application/json.",
+    "expected_titles": [
+      "Request Forms and Files"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-017",
+    "question": "What are the advantages of declaring an uploaded file parameter as UploadFile instead of bytes?",
+    "reference_answer": "UploadFile uses a 'spooled' file that stays in memory only up to a size limit before spilling to disk, so it handles large files without consuming all available memory. It also exposes metadata like filename and content_type and offers an async file-like interface, unlike bytes, which loads the entire file into memory.",
+    "expected_titles": [
+      "Request Files"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-018",
+    "question": "If I annotate a path operation function's return type as a Pydantic model, what does FastAPI do with that information?",
+    "reference_answer": "FastAPI uses the return type to validate the returned data, add a JSON Schema for the response to the OpenAPI docs, and serialize the output with Pydantic. Importantly, it also limits and filters the output to only the fields defined in that type, which matters for not leaking extra data.",
+    "expected_titles": [
+      "Response Model - Return Type"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-019",
+    "question": "How can I set a custom HTTP status code, like 201, for a successful response without memorizing the numeric codes?",
+    "reference_answer": "Pass status_code to the path operation decorator, e.g. @app.post(..., status_code=201), or use a convenience constant from fastapi.status such as status.HTTP_201_CREATED so your editor can autocomplete the right name.",
+    "expected_titles": [
+      "Response Status Code"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-020",
+    "question": "What's the difference between putting examples in a Pydantic model's json_schema_extra versus passing openapi_examples to Body()?",
+    "reference_answer": "Examples added via a model's json_schema_extra (or Field's examples) become part of the JSON Schema and are shown as a single example in the docs. openapi_examples is an OpenAPI-specific dict of named examples placed on the path operation itself, which lets Swagger UI display multiple distinct named examples, something plain JSON Schema examples don't render well there.",
+    "expected_titles": [
+      "Declare Request Example Data"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-021",
+    "question": "Why would an application typically use three separate Pydantic models for a user, such as UserIn, UserOut, and UserInDB?",
+    "reference_answer": "Because the input model needs to accept a plaintext password, the output model must not expose any password, and the database model needs to store a hashed password instead. These are three different 'states' of the same user entity, best handled with multiple models, optionally sharing a common base like UserBase, rather than one single model.",
+    "expected_titles": [
+      "Extra Models"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-022",
+    "question": "How do I convert a Pydantic model containing a datetime field into something I can store in a JSON-only database?",
+    "reference_answer": "Use FastAPI's jsonable_encoder() function. It takes an object such as a Pydantic model and returns a JSON-compatible Python data structure like a dict, converting types such as datetime into strings, ready to be passed to json.dumps() or stored directly.",
+    "expected_titles": [
+      "JSON Compatible Encoder"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-023",
+    "question": "How do I return a 404 error with a custom message when an item isn't found in a path operation?",
+    "reference_answer": "Import HTTPException from fastapi and raise it (not return it) with a status_code of 404 and a detail value, for example raise HTTPException(status_code=404, detail=\"Item not found\"). Raising it terminates the request right away and sends that error to the client.",
+    "expected_titles": [
+      "Handling Errors"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-024",
+    "question": "How do I run code both before a request reaches a path operation and after the response is generated?",
+    "reference_answer": "Create a function decorated with @app.middleware(\"http\") that receives the request and a call_next function. Run your 'before' code, call response = await call_next(request) to obtain the response from the path operation, then run your 'after' code, such as adding an X-Process-Time header, before returning the response.",
+    "expected_titles": [
+      "Middleware"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-025",
+    "question": "If I set allow_origins to a wildcard '*' in CORSMiddleware, will that work if my app also needs to support cookies or credentials?",
+    "reference_answer": "No. Using '*' for allow_origins, allow_methods, or allow_headers is disallowed when allow_credentials is set to True. The wildcard excludes anything involving credentials like cookies or Bearer tokens, so allowed origins must be explicitly listed for credentialed requests to work.",
+    "expected_titles": [
+      "CORS (Cross-Origin Resource Sharing)"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-026",
+    "question": "At a basic level, what is FastAPI's Dependency Injection system used for?",
+    "reference_answer": "It lets path operation functions and other dependencies declare things they require, called 'dependencies', and FastAPI takes care of calling those dependency functions with the right parameters and injecting the results. This is useful for sharing logic, database connections, and enforcing security across many endpoints while minimizing code repetition.",
+    "expected_titles": [
+      "Dependencies"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-027",
+    "question": "Can I use a Python class, not just a function, as a FastAPI dependency?",
+    "reference_answer": "Yes, because creating a class instance uses the same 'callable' syntax as calling a function. FastAPI only checks that a dependency is callable and inspects its parameters, which for a class means the __init__ parameters, the same way it processes path operation function parameters.",
+    "expected_titles": [
+      "Classes as Dependencies"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-028",
+    "question": "If the same dependency is required by several other dependencies during one request, does FastAPI call it multiple times?",
+    "reference_answer": "No, by default FastAPI caches the result and calls a given sub-dependency only once per request, reusing the cached value for every dependant that needs it. You can force it to be called again each time by passing use_cache=False to Depends().",
+    "expected_titles": [
+      "Sub-dependencies"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-029",
+    "question": "How do I make FastAPI execute a dependency for a path operation without needing its return value inside the function?",
+    "reference_answer": "Pass a list of Depends() calls to the dependencies parameter of the path operation decorator, instead of declaring the dependency as a function parameter. These execute the same way normal dependencies do, including raising exceptions, but their return values are not passed to the function.",
+    "expected_titles": [
+      "Dependencies in path operation decorators"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-030",
+    "question": "How can a dependency run cleanup code, like closing a database session, after the response has been sent?",
+    "reference_answer": "Use yield instead of return in the dependency function. The code before yield runs before the response is generated, the yielded value is injected into the path operation, and the code after yield, the 'exit code', runs after the response has been sent, similar to a context manager.",
+    "expected_titles": [
+      "Dependencies with yield"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-031",
+    "question": "What FastAPI class implements the OAuth2 password flow using a Bearer token to extract credentials from a request?",
+    "reference_answer": "OAuth2PasswordBearer. You create an instance with a tokenUrl parameter, the URL clients use to obtain a token, and use it as a dependency with Depends(). It looks for the Authorization header, checks for a 'Bearer ' prefixed token, returns the token as a string, and automatically responds with 401 if it's missing or malformed.",
+    "expected_titles": [
+      "Security - First Steps"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-032",
+    "question": "How is the currently authenticated user typically obtained inside a path operation function?",
+    "reference_answer": "By creating a get_current_user dependency that itself depends on the oauth2_scheme sub-dependency to get the token, then uses a utility function to look up and return a Pydantic User model based on that token. The path operation then declares a current_user parameter via Depends(get_current_user).",
+    "expected_titles": [
+      "Get Current User"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-033",
+    "question": "What is the difference between OAuth2 and OpenID Connect according to the docs?",
+    "reference_answer": "OAuth2 is a specification defining several authentication and authorization flows, including third-party 'login with X' mechanisms, and it does not specify how to encrypt communication, expecting HTTPS instead. OpenID Connect is built on top of OAuth2 and extends it by clarifying ambiguous parts to make it more interoperable, for example by specifying automatic discovery of OAuth2 authentication data.",
+    "expected_titles": [
+      "Security"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-034",
+    "question": "What class is used to extract the username, password, and scope from a login form as required by the OAuth2 password flow?",
+    "reference_answer": "OAuth2PasswordRequestForm, used as a class dependency with Depends() on the /token path operation. It declares username, password, an optional space-separated scope string, an optional grant_type, and optional client_id and client_secret fields, all sent as form data.",
+    "expected_titles": [
+      "Simple OAuth2 with Password and Bearer"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-035",
+    "question": "Which two third-party packages does the tutorial add to implement secure password hashing and JWT-based tokens?",
+    "reference_answer": "PyJWT (installed as pyjwt) is used to generate and verify JWT tokens, and pwdlib, installed with the argon2 extra, is used to hash and verify passwords, with Argon2 as the recommended hashing algorithm.",
+    "expected_titles": [
+      "OAuth2 with Password (and hashing), Bearer with JWT tokens"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-036",
+    "question": "What library does the FastAPI SQL databases tutorial use, and what is it built on top of?",
+    "reference_answer": "The tutorial uses SQLModel, which is built on top of SQLAlchemy and Pydantic and was made by the same author as FastAPI. A SQLModel class becomes a database table model when declared with table=True, and is otherwise treated as a plain Pydantic data model.",
+    "expected_titles": [
+      "SQL (Relational) Databases"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-037",
+    "question": "What tool does FastAPI's testing tutorial recommend for writing tests, and what is it built on?",
+    "reference_answer": "TestClient, which is based on Starlette's test client and, in turn, on HTTPX, whose design mirrors the Requests library. You create a TestClient by passing your FastAPI app to it, then write pytest-style test_ functions using normal, non-async calls and plain assert statements.",
+    "expected_titles": [
+      "Testing"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-038",
+    "question": "How do I stream Server-Sent Events from a FastAPI path operation?",
+    "reference_answer": "Use yield in the path operation function and set response_class=EventSourceResponse, imported from fastapi.sse. Each yielded item is JSON-encoded and sent in the data: field of an SSE event, and declaring a return type like AsyncIterable[Item] lets FastAPI validate, document, and serialize it with Pydantic.",
+    "expected_titles": [
+      "Server-Sent Events (SSE)"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-039",
+    "question": "What does the fallback='auto' default do when serving a frontend with app.frontend()?",
+    "reference_answer": "With fallback=\"auto\", the default, if a 404.html file exists in the frontend directory, missing frontend paths are served that file with status 404. Otherwise, if an index.html exists, missing browser-navigation paths serve index.html instead, so the frontend framework can handle client-side routing.",
+    "expected_titles": [
+      "Frontend"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-040",
+    "question": "How do I add a path prefix, tags, and dependencies to every path operation in a router without repeating them on each one?",
+    "reference_answer": "Pass those parameters, such as prefix, tags, responses, and dependencies, directly to the APIRouter() constructor, or to app.include_router() when including it, rather than to each individual path operation decorator. They then apply to all path operations registered on that router.",
+    "expected_titles": [
+      "Bigger Applications - Multiple Files"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-041",
+    "question": "How can I mark a path operation as deprecated without removing it from my app?",
+    "reference_answer": "Pass deprecated=True to the path operation decorator, for example @app.get(\"/items/\", deprecated=True). It will be clearly marked as deprecated in the interactive docs while remaining fully callable.",
+    "expected_titles": [
+      "Path Operation Configuration"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-042",
+    "question": "What command does the tutorial recommend to create a new FastAPI project and add FastAPI as a dependency?",
+    "reference_answer": "Using uv: run 'uv init awesome-project --bare' to create a minimal project, then 'cd awesome-project' and 'uv add \"fastapi[standard]\"'. This creates a virtual environment, adds FastAPI to pyproject.toml, and records exact package versions in uv.lock.",
+    "expected_titles": [
+      "Tutorial - User Guide"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-043",
+    "question": "When exactly does FastAPI run a background task added with BackgroundTasks.add_task()?",
+    "reference_answer": "The background task runs after the response has already been returned to the client, so the client doesn't have to wait for it. This is useful for things like sending a notification email or processing a file after immediately returning a response such as HTTP 202.",
+    "expected_titles": [
+      "Background Tasks"
+    ],
+    "category": "single_topic"
+  },
+  {
+    "id": "qa-044",
+    "question": "If I want browser JavaScript on a different origin to read a custom header my API sets on an error response, what two separate things do I need to configure?",
+    "reference_answer": "You need CORSMiddleware configured with the requesting origin included in allow_origins (and expose_headers listing the custom header, since browsers only expose that header to JS if the server allows it), and you need the error response itself, such as an HTTPException, to actually include that custom header, which you can do by passing a headers argument when raising it.",
+    "expected_titles": [
+      "CORS (Cross-Origin Resource Sharing)",
+      "Handling Errors"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-045",
+    "question": "If a dependency with yield catches an exception in a try/except block, what must it do to avoid silently hiding the error, and how does this connect to custom exception handlers?",
+    "reference_answer": "It must re-raise the original exception, or raise a new one like HTTPException; otherwise FastAPI won't know an exception occurred, and the client just receives a generic 500 error with no indication in the server logs of what went wrong. If you want to catch such an exception and produce a custom response instead of the default, you build a custom exception handler as described for handling errors, such as one registered for the specific exception type.",
+    "expected_titles": [
+      "Dependencies with yield",
+      "Handling Errors"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-046",
+    "question": "Relative to middleware, when do a path operation's background tasks actually run?",
+    "reference_answer": "Background tasks run after the response has been returned to the client. According to the middleware docs, background tasks also run after all the middleware has finished executing (and after the exit code of any dependencies with yield), so middleware always completes before background tasks fire.",
+    "expected_titles": [
+      "Background Tasks",
+      "Middleware"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-047",
+    "question": "Why might I annotate a function's return type as one Pydantic model, like BaseUser, while actually returning an instance of a subclass with extra fields, like UserIn, and what happens to those extra fields in the response?",
+    "reference_answer": "Because a subclass instance is a valid value wherever the base type is expected under normal typing rules, editors and tools like mypy accept it without complaint. But FastAPI still filters the returned data down to only the fields declared on the annotated return type, so extra fields such as a password on the subclass are stripped out of the actual response sent to clients.",
+    "expected_titles": [
+      "Extra Models",
+      "Response Model - Return Type"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-048",
+    "question": "How does the get_current_user dependency change once JWT-based tokens are introduced instead of the earlier simple token lookup?",
+    "reference_answer": "get_current_user still receives a token string from the oauth2_scheme sub-dependency the same way as before, but instead of a direct lookup, it now decodes and verifies the JWT and extracts the user's identity from its subject claim, raising an HTTP error right away if the token is invalid or fails verification.",
+    "expected_titles": [
+      "Get Current User",
+      "OAuth2 with Password (and hashing), Bearer with JWT tokens"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-049",
+    "question": "What's the relationship between the tokenUrl passed to OAuth2PasswordBearer and the /token path operation built to actually issue tokens?",
+    "reference_answer": "The tokenUrl declared on OAuth2PasswordBearer, such as tokenUrl=\"token\", doesn't create the endpoint itself; it only tells OpenAPI and the interactive docs where clients should send credentials to obtain a token. The actual /token path operation, which uses OAuth2PasswordRequestForm to accept the username and password and returns an access token, is what has to be implemented separately to serve that URL.",
+    "expected_titles": [
+      "Security - First Steps",
+      "Simple OAuth2 with Password and Bearer"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-050",
+    "question": "If my FastAPI app is split into an app package following the multi-file structure, how do I import the app object into my test file?",
+    "reference_answer": "Put test_main.py inside the same app package alongside main.py, both under a directory with an __init__.py file, then use a relative import such as 'from .main import app' to get the FastAPI instance. From there, instantiate a TestClient with that app object and write tests as usual.",
+    "expected_titles": [
+      "Bigger Applications - Multiple Files",
+      "Testing"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-051",
+    "question": "How does the SQL databases tutorial ensure each request gets its own database session that's properly closed afterward?",
+    "reference_answer": "It defines a dependency using yield that creates a new SQLModel Session and yields it, following the general pattern where code before yield sets up a resource and code after yield tears it down. FastAPI uses this to guarantee a single session per request, wrapped as an Annotated SessionDep type alias for convenient reuse across path operations.",
+    "expected_titles": [
+      "Dependencies with yield",
+      "SQL (Relational) Databases"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-052",
+    "question": "What's the difference between passing dependencies to a single path operation's decorator versus passing dependencies to the FastAPI() app itself?",
+    "reference_answer": "Dependencies passed to a path operation decorator's dependencies parameter only apply to that one path operation, useful when you don't need the dependency's return value inside the function. Dependencies passed to the FastAPI() app constructor are applied to every path operation across the whole application, following the same execution rules but at a global scope.",
+    "expected_titles": [
+      "Dependencies in path operation decorators",
+      "Global Dependencies"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-053",
+    "question": "Both cookie and header parameter models support forbidding extra fields with Pydantic configuration \u2014 what does the error response look like in each case if a client sends disallowed extra data?",
+    "reference_answer": "In both cases, forbidding extra fields on the Pydantic model causes FastAPI to return an error with type 'extra_forbidden'. The loc array differs by source: for cookies it's [\"cookie\", <name>], and for headers it's [\"header\", <name>], each accompanied by a msg stating that extra inputs are not permitted.",
+    "expected_titles": [
+      "Cookie Parameter Models",
+      "Header Parameter Models"
+    ],
+    "category": "multi_topic"
+  },
+  {
+    "id": "qa-054",
+    "question": "How do I deploy a FastAPI application using Docker and Kubernetes?",
+    "reference_answer": "REFUSAL_EXPECTED",
+    "expected_titles": [],
+    "category": "refusal"
+  },
+  {
+    "id": "qa-055",
+    "question": "What async database driver does FastAPI recommend for connecting to PostgreSQL asynchronously, such as asyncpg or the databases library?",
+    "reference_answer": "REFUSAL_EXPECTED",
+    "expected_titles": [],
+    "category": "refusal"
+  },
+  {
+    "id": "qa-056",
+    "question": "How do I set up rate limiting for my FastAPI endpoints?",
+    "reference_answer": "REFUSAL_EXPECTED",
+    "expected_titles": [],
+    "category": "refusal"
+  },
+  {
+    "id": "qa-057",
+    "question": "How can I add WebSocket support to a FastAPI application?",
+    "reference_answer": "REFUSAL_EXPECTED",
+    "expected_titles": [],
+    "category": "refusal"
+  },
+  {
+    "id": "qa-058",
+    "question": "How do I configure FastAPI to serve a GraphQL API instead of REST endpoints?",
+    "reference_answer": "REFUSAL_EXPECTED",
+    "expected_titles": [],
+    "category": "refusal"
+  },
+  {
+    "id": "qa-059",
+    "question": "How do I write asynchronous unit tests with pytest-asyncio for async database calls in a FastAPI app?",
+    "reference_answer": "REFUSAL_EXPECTED",
+    "expected_titles": [],
+    "category": "refusal"
+  }
+]

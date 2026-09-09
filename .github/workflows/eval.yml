@@ -1,0 +1,65 @@
+name: RAG quality eval
+
+# This is the "wire into CI so quality regressions fail builds" piece of
+# your original brief. It runs on every push and pull request: rebuilds
+# the vector + BM25 indexes from the committed chunks.json, runs the
+# faithfulness eval (4_evaluate.py) against a subset of the eval set for
+# speed/cost, and fails the whole check (red X on the PR) if any
+# aggregate metric in 4_evaluate.py drops below its threshold.
+#
+# Note the sample size below (CI_SAMPLE_SIZE): every question here is a
+# real Claude API call plus real embedding/cross-encoder inference, so
+# running the full eval set on every single push costs real time and real
+# API spend. Running a smaller, fixed-size sample on every push/PR, with
+# the full set run by hand before anything that touches retrieval or
+# prompts gets merged, is a common practical compromise - raise or lower
+# CI_SAMPLE_SIZE, or drop --sample entirely to always run the full set.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  CI_SAMPLE_SIZE: "20"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Caches both the pip install and the downloaded HuggingFace models
+      # (the embedding model + cross-encoder are ~100-300MB combined) so
+      # repeat runs don't re-download everything from scratch.
+      - name: Cache pip and HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/huggingface
+          key: ${{ runner.os }}-rag-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Build vector + BM25 indexes from committed chunks.json
+        run: python 2_build_index.py
+
+      - name: Run offline eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python 4_evaluate.py --sample ${{ env.CI_SAMPLE_SIZE }} --verbose
+
+      - name: Upload full eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: eval_results.json

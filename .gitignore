@@ -1,0 +1,24 @@
+# Secrets - never commit this
+.env
+
+# The raw FastAPI repo clone - large, and not yours to version; anyone
+# setting this project up re-clones it with the command in the README
+fastapi-source/
+
+# Regenerable build artifacts - rebuilt from the committed chunks.json by
+# 2_build_index.py (this is exactly what the CI workflow does)
+chroma_db/
+bm25_index.pkl
+
+# Regenerated every eval run - the CI workflow uploads it as a build
+# artifact instead of tracking it in git history
+eval_results.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS
+.DS_Store

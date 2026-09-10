@@ -6,6 +6,19 @@ your original project brief asked for: token-based chunking, real neural
 embeddings, a real vector database, and citations that link to actual
 docs pages.
 
+## Background
+
+This project followed an earlier practice project called **mini-rag** - a
+small RAG system built over 4 short sample documents, using TF-IDF
+embeddings and a pickled Python list as a makeshift vector store, to
+learn the core retrieve-then-generate loop before adding production-grade
+infrastructure. mini-rag isn't part of this repo - it was a learning
+exercise, not something meant to be reused. Every concept it taught
+(chunking, embeddings, citation-grounded generation, refusing to answer
+when nothing relevant was retrieved) carried forward into this project,
+just with real components in place of the toy versions. The comparison
+table further down spells out exactly what changed between the two.
+
 ## Setup (one time)
 
 ```bash
@@ -16,14 +29,15 @@ This will take longer than the mini-rag install - `sentence-transformers`
 pulls in PyTorch, and the embedding model itself (~130MB) downloads the
 first time you run step 2.
 
-**API key**: copy your existing key from mini-rag rather than getting a
-new one:
+**API key**: create a `.env` file in this folder with your Anthropic API
+key:
 
 ```bash
-cp ../mini-rag/.env .env
+printf 'ANTHROPIC_API_KEY=your-key-here\n' > .env
 ```
 
-(adjust the path if your mini-rag folder is somewhere else)
+(get a key from [console.anthropic.com](https://console.anthropic.com) if
+you don't already have one)
 
 ## Run it
 
@@ -153,42 +167,21 @@ API call - see the comment at the top of the workflow file for the
 reasoning), then uploads the full `eval_results.json` as a downloadable
 build artifact either way.
 
-This repo isn't in git yet, so to actually get CI running:
+This repo is on GitHub with CI already wired up and running. `.gitignore`
+excludes `.env`, the `fastapi-source/` clone, and the regenerable
+`chroma_db/`/`bm25_index.pkl` build artifacts - only `chunks.json` itself
+is committed, so anyone cloning this repo can rebuild the indexes without
+needing the original FastAPI docs clone. The `ANTHROPIC_API_KEY` the
+workflow calls Claude with is stored as a repo secret (**Settings ->
+Secrets and variables -> Actions**) rather than committed anywhere -
+GitHub injects it as an environment variable only inside the workflow
+run, never visible in logs or to anyone without repo admin access.
 
-```bash
-cd ~/Documents/Claude/fastapi-rag
-git init
-git add .
-git commit -m "FastAPI RAG project: phases 1-3"
-```
-
-(`.gitignore` already excludes `.env`, the `fastapi-source/` clone, and
-the regenerable `chroma_db/`/`bm25_index.pkl` build artifacts - only
-`chunks.json` itself is committed, so anyone cloning this repo can
-rebuild the indexes without needing the original FastAPI docs clone.)
-
-Then create a new, empty repository on GitHub (github.com -> New
-repository - don't initialize it with a README, you already have one),
-and push:
-
-```bash
-git remote add origin https://github.com/<your-username>/<repo-name>.git
-git branch -M main
-git push -u origin main
-```
-
-Last step - the workflow needs your Anthropic API key to actually call
-Claude during eval runs, but it must never be committed to the repo. On
-GitHub: **Settings -> Secrets and variables -> Actions -> New repository
-secret**, name it `ANTHROPIC_API_KEY`, paste the same key from your
-`.env` file as the value. GitHub injects it as an environment variable
-only inside the workflow run; it's never visible in logs or to anyone
-without repo admin access.
-
-Once that's done, any push (or PR) to `main` triggers the eval
-automatically, and you'll see a green check or red X next to the commit
-on GitHub - click it to see the per-question pass/fail, or download the
-`eval-results` artifact for the full JSON detail.
+Any push (or PR) to `main` triggers the eval automatically, and you'll
+see a green check or red X next to the commit on GitHub - click it to see
+the per-question pass/fail, or download the `eval-results` artifact for
+the full JSON detail. You can also trigger it manually any time from the
+**Actions** tab -> **RAG quality eval** -> **Run workflow**.
 
 ## Still open
 
